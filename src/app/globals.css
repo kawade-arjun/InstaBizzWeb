@@ -289,19 +289,31 @@ input:not([type="checkbox"], [type="radio"], [type="submit"], [type="range"]), t
   cursor: text;
 }
 
-/* Hall of Doors Layout (Smooth scroll, no runaway movement) */
+/* Hall of Doors Layout */
 .tp-meet__hall {
-  overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   position: relative;
+}
+
+.tp-meet[data-pinned] .tp-meet__hall {
+  overflow: hidden !important;
+  flex: 1;
 }
 
 .tp-meet__hall::-webkit-scrollbar {
   display: none;
 }
 
-[data-treadmill="true"] {
-  display: flex !important;
-  width: max-content !important;
+/* Ensure all section dogs remain visible and responsive across the entire page */
+.pup-stop > .pup-buddy {
+  visibility: visible !important;
+}
+
+/* Parquet floor styling */
+.tp-meet[data-pinned] .tp-meet__floor {
+  display: block !important;
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--floor-h, clamp(5rem, 13vh, 8rem));
 }
