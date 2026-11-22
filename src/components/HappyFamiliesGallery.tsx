@@ -38,6 +38,8 @@ export function HappyFamiliesGallery({ photos }: HappyFamiliesGalleryProps) {
           <button
             key={photo.id || idx}
             type="button"
+            data-reveal="true"
+            style={{ "--d": `${(idx % 8) * 90}ms` } as React.CSSProperties}
             onClick={() => setActivePhotoIndex(idx)}
             className="group relative aspect-[3/4] overflow-hidden rounded-2xl border-2 border-cocoa/15 bg-honey/10 shadow-sm hover:border-toffee hover:shadow-lg transition-all text-left cursor-pointer"
           >

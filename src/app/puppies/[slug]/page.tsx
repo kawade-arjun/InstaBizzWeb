@@ -84,7 +84,7 @@ export default async function PuppyDetailPage({ params }: Props) {
 
           {/* Right Column: Dog Tag Specs Card */}
           <div className="lg:col-span-5 lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
-            <div className="tp-tag tp-board relative rounded-[2.2rem_2.2rem_2.2rem_0.6rem] border-3 border-cocoa bg-[#fff9ee] p-7 md:p-9 shadow-xl">
+            <div data-reveal="true" className="tp-tag tp-board relative rounded-[2.2rem_2.2rem_2.2rem_0.6rem] border-3 border-cocoa bg-[#fff9ee] p-7 md:p-9 shadow-xl">
               {/* Top collar tag ring */}
               <span aria-hidden="true" className="tp-tag__ring" />
 

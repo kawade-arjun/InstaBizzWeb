@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { RevealScope } from "@/components/RevealScope";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -73,7 +74,7 @@ export default function RootLayout({
         <SmoothScroll>
           <Header />
           <main id="main" tabIndex={-1} className="flex-1 pt-[var(--header-h)] outline-none">
-            {children}
+            <RevealScope>{children}</RevealScope>
           </main>
           <Footer />
           <MobileBottomBar />

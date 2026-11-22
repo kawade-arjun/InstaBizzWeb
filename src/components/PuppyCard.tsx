@@ -51,6 +51,7 @@ export function PuppyCard({ puppy, tiltIndex = 0 }: PuppyCardProps) {
     <li className="list-none">
       <Link
         href={`/puppies/${puppy.slug}`}
+        data-reveal="true"
         className="tp-sketch group block relative p-3 sm:p-4 rounded-3xl bg-milk border-2 border-cocoa shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
         style={
           {
