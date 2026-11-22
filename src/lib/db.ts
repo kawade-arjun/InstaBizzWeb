@@ -2,6 +2,9 @@ import { MongoClient, ObjectId, type Db } from "mongodb";
 import type { DatabaseSync as SQLiteDatabaseSync } from "node:sqlite";
 import path from "node:path";
 import fs from "node:fs";
+import puppiesFallback from "@/data/puppies.json";
+import happyFamiliesFallback from "@/data/happy_families.json";
+import faqsFallback from "@/data/faqs.json";
 
 export interface EnquiryInput {
   name: string;
@@ -176,4 +179,65 @@ export async function deleteEnquiry(id: string): Promise<void> {
     const stmt = sqliteDb.prepare("DELETE FROM enquiries WHERE id = ?");
     stmt.run(id);
   }
+}
+
+export async function getDbPuppies() {
+  const db = await getMongoDb();
+  if (db) {
+    try {
+      const puppies = await db.collection("puppies").find({}).toArray();
+      if (puppies && puppies.length > 0) {
+        return puppies.map(({ _id, updatedAt, ...rest }) => rest);
+      }
+    } catch (err) {
+      console.warn("MongoDB fetch puppies failed, falling back to JSON:", err);
+    }
+  }
+  return puppiesFallback;
+}
+
+export async function getDbPuppyBySlug(slug: string) {
+  const db = await getMongoDb();
+  if (db) {
+    try {
+      const pup = await db.collection("puppies").findOne({ slug });
+      if (pup) {
+        const { _id, updatedAt, ...rest } = pup;
+        return rest;
+      }
+    } catch (err) {
+      console.warn("MongoDB fetch puppy by slug failed, falling back to JSON:", err);
+    }
+  }
+  return puppiesFallback.find((p) => p.slug === slug) || null;
+}
+
+export async function getDbHappyFamilies() {
+  const db = await getMongoDb();
+  if (db) {
+    try {
+      const families = await db.collection("happy_families").find({}).toArray();
+      if (families && families.length > 0) {
+        return families.map(({ _id, updatedAt, ...rest }) => rest);
+      }
+    } catch (err) {
+      console.warn("MongoDB fetch families failed, falling back to JSON:", err);
+    }
+  }
+  return happyFamiliesFallback;
+}
+
+export async function getDbFaqs() {
+  const db = await getMongoDb();
+  if (db) {
+    try {
+      const faqs = await db.collection("faqs").find({}).toArray();
+      if (faqs && faqs.length > 0) {
+        return faqs.map(({ _id, updatedAt, ...rest }) => rest);
+      }
+    } catch (err) {
+      console.warn("MongoDB fetch faqs failed, falling back to JSON:", err);
+    }
+  }
+  return faqsFallback;
 }
