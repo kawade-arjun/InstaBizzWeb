@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 export interface TeddyBuddyProps {
   pose?: "sit" | "bow" | "snug" | "peek" | "walk";
   facing?: "left" | "right";
+  act?: "tilt" | "basket" | "treadmill" | "peekaboo";
   className?: string;
   ariaLabel?: string;
   responsiveCursor?: boolean;
@@ -13,6 +14,7 @@ export interface TeddyBuddyProps {
 export function TeddyBuddy({
   pose = "sit",
   facing = "right",
+  act,
   className = "",
   ariaLabel = "Teddy, the TeddyPups puppy",
   responsiveCursor = true,
@@ -226,7 +228,7 @@ export function TeddyBuddy({
             transform={
               isHappy
                 ? "translate(0 2) rotate(4 212 100)"
-                : `translate(0 4) rotate(${headAngle} 212 100)`
+                : `translate(0 4) rotate(${act === "tilt" ? 13 + headAngle : headAngle} 212 100)`
             }
             style={{ transition: "transform 0.12s ease-out" }}
           >

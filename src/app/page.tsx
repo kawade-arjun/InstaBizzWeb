@@ -388,37 +388,51 @@ export default function HomePage() {
                     className="tp-phone__avatar rounded-full"
                     src="/brand/logo.png"
                   />
-                  <div>
-                    <span className="tp-phone__title font-semibold text-sm">TeddyPups U.A.E.</span>
-                    <span className="tp-phone__status text-xs flex items-center gap-1.5 text-emerald-600">
-                      <span className="size-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                      online
-                    </span>
+                  <span>
+                    <span className="tp-phone__name">TeddyPups U.A.E.</span>
+                    <span className="tp-phone__status">online</span>
+                  </span>
+                </div>
+
+                <div className="tp-phone__screen">
+                  <p className="tp-msg tp-msg--me">Hi TeddyPups! I&apos;d love to know more about your puppies.</p>
+                  <div className="tp-msg-group" data-step="0" data-show="true">
+                    <div className="tp-msg tp-msg--them">
+                      <p>
+                        Select your preferred breed or tell us what you&apos;re looking for. We&apos;ll guide you based on availability and your lifestyle.
+                      </p>
+                      <ul className="tp-chips" aria-label="Breeds we have now">
+                        <li>
+                          <Link href="/puppies?breed=maltipoo">Maltipoo</Link>
+                        </li>
+                        <li>
+                          <Link href="/puppies?breed=pomeranian">Pomeranian</Link>
+                        </li>
+                        <li>
+                          <Link href="/puppies?breed=poodle">Poodle</Link>
+                        </li>
+                        <li>
+                          <Link href="/puppies?breed=cavapoo">Cavapoo</Link>
+                        </li>
+                        <li>
+                          <Link href="/puppies?breed=shih-tzu">Shih Tzu</Link>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
-                <div className="tp-phone__screen p-4 space-y-3">
-                  <div className="tp-phone__msg tp-phone__msg--in bg-white rounded-2xl rounded-tl-sm p-3.5 shadow-sm text-sm">
-                    <p className="font-medium text-cocoa">
-                      Hello! Welcome to TeddyPups U.A.E. Which puppy caught your eye today? 🐾
-                    </p>
-                    <span className="text-[10px] text-cocoa/50 mt-1 block text-right">10:42 AM</span>
-                  </div>
-
-                  <div className="tp-phone__msg tp-phone__msg--out bg-honey-soft/70 rounded-2xl rounded-tr-sm p-3.5 shadow-sm text-sm ml-auto max-w-[85%]">
-                    <p className="font-medium text-cocoa">
-                      Hi! I saw Max the Maltipoo on your site. Is he available to meet in Downtown Dubai?
-                    </p>
-                    <span className="text-[10px] text-cocoa/50 mt-1 block text-right">10:44 AM ✓✓</span>
-                  </div>
-
-                  <div className="tp-phone__msg tp-phone__msg--in bg-white rounded-2xl rounded-tl-sm p-3.5 shadow-sm text-sm">
-                    <p className="font-medium text-cocoa">
-                      Yes! Max is right here in our showroom. We can arrange a private bonding visit today or send you his newest video! ✨
-                    </p>
-                    <span className="text-[10px] text-cocoa/50 mt-1 block text-right">10:45 AM</span>
-                  </div>
-                </div>
+                <a
+                  href="https://wa.me/919898124987?text=Hi%20TeddyPups%2C%20I%27d%20like%20to%20discuss%20a%20puppy."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="tp-phone__compose"
+                >
+                  <span>Say hello on WhatsApp</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path d="M3 20l18-8L3 4v6l12 2-12 2z" />
+                  </svg>
+                </a>
               </div>
               <div data-pup-stop="true" data-pose="sit" data-facing="right" className="pup-stop tp-chat__teddy">
                 <TeddyBuddy pose="sit" facing="right" />
@@ -661,7 +675,7 @@ export default function HomePage() {
               </h2>
               <span aria-hidden="true" className="tp-night__wonder font-plush">?</span>
               <div data-pup-stop="true" data-pose="sit" data-facing="right" data-act="tilt" className="pup-stop tp-night__teddy">
-                <TeddyBuddy pose="sit" facing="right" />
+                <TeddyBuddy pose="sit" facing="right" act="tilt" />
               </div>
               <Link className="btn btn-ghost tp-night__cta mt-6 inline-block" href="/faq">
                 Read all questions
