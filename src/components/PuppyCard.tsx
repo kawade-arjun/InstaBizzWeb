@@ -14,6 +14,7 @@ export interface Puppy {
   origin: string;
   location?: string;
   status: "available" | "gone-home";
+  hasVideo?: boolean;
   media: Array<{
     id: string;
     url: string;
@@ -30,11 +31,10 @@ interface PuppyCardProps {
   tiltIndex?: number;
 }
 
-const WASH_COLORS = ["#f2be6b", "#f9cdbf", "#bfddf5", "#fbe3b4"];
+const WASH_COLORS = ["#f2be6b", "#f9cdbf", "#bfddf5", "#fbe3b4", "#f4b183"];
 
 export function PuppyCard({ puppy, tiltIndex = 0 }: PuppyCardProps) {
-  // Deterministic slight tilt based on tiltIndex
-  const tilts = ["-0.8deg", "1.2deg", "-1.5deg", "0.6deg", "-0.4deg", "1.6deg"];
+  const tilts = ["0.36deg", "-0.45deg", "0.52deg", "-0.6deg", "0.28deg", "-0.38deg"];
   const tilt = tilts[tiltIndex % tilts.length];
   const wash = WASH_COLORS[tiltIndex % WASH_COLORS.length];
 
@@ -48,72 +48,59 @@ export function PuppyCard({ puppy, tiltIndex = 0 }: PuppyCardProps) {
   const isGoneHome = puppy.status === "gone-home";
 
   return (
-    <li className="list-none">
+    <li>
       <Link
-        href={`/puppies/${puppy.slug}`}
+        className="tp-sketch"
         data-reveal="true"
-        className="tp-sketch group block relative p-3 sm:p-4 rounded-3xl bg-milk border-2 border-cocoa shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
         style={
           {
             "--tilt": tilt,
+            "--d": `${(tiltIndex % 6) * 60}ms`,
             "--wash": wash,
-            transform: `rotate(${tilt})`,
           } as React.CSSProperties
         }
         aria-label={`${puppy.name}, ${puppy.breed}, ${puppy.gender}, ${puppy.age}, ${puppy.status}`}
+        href={`/puppies/${puppy.slug}`}
       >
-        <span className="tp-sketch__frame block relative overflow-hidden rounded-2xl bg-honey/20 aspect-[4/5]">
-          {/* Decorative background wash */}
-          <span
-            className="absolute inset-0 opacity-40 mix-blend-multiply"
-            style={{ backgroundColor: wash }}
+        <span className="tp-sketch__frame">
+          {/* Handcrafted wash svg */}
+          <svg
             aria-hidden="true"
-          />
+            viewBox="0 0 100 100"
+            className="tp-sketch__wash"
+            style={{ translate: "-4.0% 4.9%" }}
+          >
+            <path
+              d="M96.73 50.00C96.38 52.37 95.89 54.67 95.32 56.94C94.75 59.21 94.09 61.43 93.30 63.61C92.50 65.78 91.61 67.93 90.55 69.98C89.49 72.04 88.29 74.06 86.92 75.94C85.55 77.83 84.00 79.63 82.33 81.27C80.66 82.92 78.82 84.44 76.90 85.81C74.98 87.18 72.93 88.41 70.82 89.52C68.71 90.62 66.51 91.60 64.26 92.44C62.01 93.29 59.68 94.03 57.30 94.59C54.92 95.15 52.47 95.59 50.00 95.80C47.53 96.01 44.98 96.06 42.49 95.83C40.01 95.61 37.47 95.15 35.07 94.45C32.66 93.75 30.28 92.78 28.07 91.64C25.85 90.49 23.73 89.09 21.76 87.60C19.78 86.10 17.95 84.41 16.22 82.67C14.49 80.93 12.89 79.06 11.38 77.13C9.88 75.20 8.47 73.19 7.20 71.09C5.94 68.99 4.75 66.7"
+              fill={wash}
+            />
+          </svg>
 
           {/* Photo */}
-          <Image
-            src={primaryImage.url}
-            alt={primaryImage.alt || puppy.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            unoptimized={primaryImage.url.startsWith("http")}
-          />
-
-          {/* Origin / Status Badge Ribbon */}
-          <span className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-            {isGoneHome ? (
-              <span className="chip !bg-cocoa !text-milk text-xs font-bold shadow-sm">
-                Gone home
-              </span>
-            ) : puppy.origin?.toLowerCase().includes("local") || puppy.location?.toLowerCase().includes("showroom") ? (
-              <span className="chip !bg-honey !text-cocoa text-xs font-bold shadow-sm">
-                Dubai showroom
-              </span>
-            ) : (
-              <span className="chip !bg-toffee !text-milk text-xs font-bold shadow-sm">
-                Imported for you
-              </span>
-            )}
+          <span className="tp-sketch__photo">
+            <Image
+              src={primaryImage.url}
+              alt={primaryImage.alt || `${puppy.name}, ${puppy.gender} ${puppy.breed}`}
+              fill
+              sizes="(min-width: 1024px) 22rem, (min-width: 640px) 44vw, 88vw"
+              className="object-cover"
+              unoptimized={primaryImage.url.startsWith("http")}
+            />
           </span>
+
+          {/* Status sticker */}
+          <span className="tp-sketch__sticker font-scrawl">
+            {isGoneHome ? "Gone home" : "Available"}
+          </span>
+
+          {puppy.hasVideo && <span className="tp-sketch__video">▶ video</span>}
         </span>
 
-        {/* Card Metadata */}
-        <div className="mt-3.5 px-1">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-plush text-xl font-bold text-cocoa group-hover:text-toffee transition-colors truncate">
-              {puppy.name}
-            </h3>
-            <span className="font-scrawl text-xs font-semibold text-cocoa-soft whitespace-nowrap">
-              {puppy.age}
-            </span>
-          </div>
-
-          <div className="mt-1 flex items-center justify-between text-xs text-cocoa-soft font-medium">
-            <span>{puppy.breed}</span>
-            <span className="capitalize">{puppy.gender}</span>
-          </div>
-        </div>
+        {/* Card info */}
+        <span className="tp-sketch__name font-plush">{puppy.name}</span>
+        <span className="tp-sketch__meta">
+          {puppy.breed} · {puppy.gender} · {puppy.age}
+        </span>
       </Link>
     </li>
   );

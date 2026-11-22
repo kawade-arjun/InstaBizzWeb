@@ -57,7 +57,8 @@ export default async function PuppyDetailPage({ params }: Props) {
   ];
 
   return (
-    <div className="gutter mx-auto max-w-[110rem] pb-24 pt-8 md:pt-12 space-y-16">
+    <div data-page="pup" className="tp-page">
+      <div className="gutter mx-auto max-w-[110rem] pb-24 pt-8 md:pt-12 space-y-16">
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="text-sm font-semibold text-cocoa-soft flex items-center gap-2">
         <Link href="/puppies" className="hover:text-toffee hover:underline">
@@ -298,6 +299,7 @@ export default async function PuppyDetailPage({ params }: Props) {
           </span>
         </Link>
       </nav>
+      </div>
     </div>
   );
 }

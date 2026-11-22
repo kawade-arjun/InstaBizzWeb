@@ -10,33 +10,46 @@ export const metadata: Metadata = {
 
 export default function HowItWorksPage() {
   return (
-    <div className="gutter mx-auto max-w-[110rem] py-12 md:py-16 space-y-20">
-      {/* Header */}
-      <div>
-        <p className="font-scrawl text-toffee text-lg">the adoption process</p>
-        <h1 className="font-plush text-4xl sm:text-5xl md:text-6xl text-cocoa font-bold mt-1">
-          How it works
-        </h1>
-        <p className="mt-3 max-w-2xl text-cocoa-soft text-base sm:text-lg">
-          Meet a local puppy in our Downtown Dubai showroom or reserve a premium teacup breed imported for you — every step, from choosing to coming home, designed to be joyful and seamless.
-        </p>
+    <div data-page="how" className="tp-page">
+      <section
+        data-pup-scene="true"
+        data-tone="light"
+        className="tp-scene"
+        style={
+          {
+            "--sky-top": "#fffbf3",
+            "--sky-bottom": "#f6cc85",
+          } as React.CSSProperties
+        }
+        aria-labelledby="how-title"
+      >
+        <div className="gutter mx-auto max-w-[110rem] pb-24 pt-10 md:pt-16 space-y-20">
+          {/* Header */}
+          <header className="grid gap-8 md:grid-cols-12 md:items-end">
+            <h1 id="how-title" className="font-plush text-giant md:col-span-7">
+              How it works
+            </h1>
+            <p className="text-lede text-[var(--ink-soft)] md:col-span-5 md:pb-4">
+              Whether you choose to visit us locally or order a premium breed from overseas, TeddyPups
+              is here to make the experience unforgettable.
+            </p>
+          </header>
 
-        {/* Chapter Quick Jump Pills */}
-        <nav aria-label="On this page" className="mt-8 flex flex-wrap gap-2.5">
-          <a href="#two-ways" className="chip h-10 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
-            <span className="font-plush text-toffee font-black mr-1.5">1</span> Two ways home
-          </a>
-          <a href="#promise" className="chip h-10 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
-            <span className="font-plush text-toffee font-black mr-1.5">2</span> Our premium puppy promise
-          </a>
-          <a href="#delivery" className="chip h-10 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
-            <span className="font-plush text-toffee font-black mr-1.5">3</span> Delivery &amp; collection
-          </a>
-          <a href="#why" className="chip h-10 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
-            <span className="font-plush text-toffee font-black mr-1.5">4</span> Why choose us
-          </a>
-        </nav>
-      </div>
+          {/* Chapter Quick Jump Pills */}
+          <nav aria-label="On this page" className="flex flex-wrap gap-2.5">
+            <a href="#two-ways" className="chip h-11 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
+              <span className="font-plush text-toffee font-black mr-1.5">1</span> Two ways home
+            </a>
+            <a href="#promise" className="chip h-11 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
+              <span className="font-plush text-toffee font-black mr-1.5">2</span> Our premium puppy promise
+            </a>
+            <a href="#delivery" className="chip h-11 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
+              <span className="font-plush text-toffee font-black mr-1.5">3</span> Delivery &amp; collection
+            </a>
+            <a href="#why" className="chip h-11 border-2 border-cocoa !bg-milk px-4 hover:!bg-honey-soft text-xs font-bold text-cocoa">
+              <span className="font-plush text-toffee font-black mr-1.5">4</span> Why choose us
+            </a>
+          </nav>
 
       {/* CHAPTER 1: TWO WAYS HOME */}
       <section id="two-ways" className="scroll-mt-28 space-y-8">
@@ -219,6 +232,8 @@ export default function HowItWorksPage() {
               Ask questions on WhatsApp
             </a>
           </div>
+        </div>
+      </section>
         </div>
       </section>
     </div>
