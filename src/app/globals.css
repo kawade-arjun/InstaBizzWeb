@@ -266,6 +266,16 @@ html {
   50% { transform: translateY(-12px); }
 }
 
+/* Hero Lineup Tags & Lift on Hover */
+.tp-lineup__pup:is(:hover, :focus-visible) .tp-lineup__name {
+  opacity: 1 !important;
+  translate: var(--tag-x, -50%) -14% !important;
+}
+
+.tp-lineup__pup:is(:hover, :focus-visible) .tp-lineup__photo {
+  translate: 0 -10% !important;
+}
+
 /* Custom Paw Cursor from Reference Website */
 html, body {
   cursor: url("/cursor/paw.svg") 9 6, auto;

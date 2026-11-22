@@ -129,7 +129,7 @@ export default function HomePage() {
                           sizes="(max-width: 768px) 30vw, 15rem"
                         />
                       </span>
-                      <span className="tp-lineup__tag font-scrawl">{pup.name}</span>
+                      <span className="tp-lineup__name font-scrawl">{pup.breed || pup.name}</span>
                     </Link>
                   </li>
                 );
