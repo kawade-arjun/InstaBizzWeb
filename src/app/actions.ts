@@ -48,7 +48,7 @@ export async function sendEnquiry(
   }
 
   try {
-    saveEnquiry({
+    await saveEnquiry({
       name,
       phone,
       email: email || undefined,
@@ -72,5 +72,5 @@ export async function sendEnquiry(
 
 export async function deleteEnquiryAction(id: string) {
   const { deleteEnquiry } = await import("@/lib/db");
-  deleteEnquiry(id);
+  await deleteEnquiry(id);
 }

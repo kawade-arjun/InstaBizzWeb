@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const enquiries = getAllEnquiries();
+  const enquiries = await getAllEnquiries();
 
   return (
     <div className="gutter mx-auto max-w-[110rem] py-12 md:py-16 space-y-8">
