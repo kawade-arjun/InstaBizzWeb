@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 export interface TeddyBuddyProps {
-  pose?: "sit" | "bow" | "snug" | "peek" | "walk";
+  pose?: "sit" | "bow" | "snug" | "peek" | "walk" | "sleep";
   facing?: "left" | "right";
   act?: "tilt" | "basket" | "treadmill" | "peekaboo";
   className?: string;
@@ -25,27 +25,47 @@ export function TeddyBuddy({
   const [bubbleText, setBubbleText] = useState("hm?");
   const [isHappy, setIsHappy] = useState(false);
   const [isBlinking, setIsBlinking] = useState(false);
+  const [walkPhase, setWalkPhase] = useState(0);
 
   // Responsive eye offset and head tilt towards cursor
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
   const [headAngle, setHeadAngle] = useState(0);
   const [currentFacing, setCurrentFacing] = useState(facing);
 
+  const isAsleep = pose === "sleep" || (pose === "snug" && act === "basket");
+
   useEffect(() => {
     setCurrentFacing(facing);
   }, [facing]);
 
-  // Periodic natural blinking
+  // Subtle walk stride animation when walking
   useEffect(() => {
+    if (pose !== "walk") return;
+    let animId: number;
+    let start = performance.now();
+    const loop = (now: number) => {
+      const elapsed = (now - start) / 1000;
+      setWalkPhase(elapsed);
+      animId = requestAnimationFrame(loop);
+    };
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [pose]);
+
+  // Periodic natural blinking (only when awake)
+  useEffect(() => {
+    if (isAsleep) {
+      setIsBlinking(false);
+      return;
+    }
+
     let blinkTimer: NodeJS.Timeout;
     let shutTimer: NodeJS.Timeout;
 
     const scheduleNextBlink = () => {
-      // Natural interval between 2.8s and 5.2s
       const delay = 2800 + Math.random() * 2400;
       blinkTimer = setTimeout(() => {
         setIsBlinking(true);
-        // Eyelid closes for 130ms
         shutTimer = setTimeout(() => {
           setIsBlinking(false);
           scheduleNextBlink();
@@ -59,11 +79,15 @@ export function TeddyBuddy({
       clearTimeout(blinkTimer);
       clearTimeout(shutTimer);
     };
-  }, []);
+  }, [isAsleep]);
 
-  // Real-time cursor tracking
+  // Real-time cursor tracking (only when awake)
   useEffect(() => {
-    if (!responsiveCursor) return;
+    if (!responsiveCursor || isAsleep) {
+      setEyeOffset({ x: 0, y: 0 });
+      setHeadAngle(0);
+      return;
+    }
 
     let rafId: number;
 
@@ -108,7 +132,7 @@ export function TeddyBuddy({
       cancelAnimationFrame(rafId);
       window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [responsiveCursor]);
+  }, [responsiveCursor, isAsleep]);
 
   let shadowOpacity = 0.12;
   let bodyTransform = "translate(0 -2) rotate(-24 196 206) translate(196 0) scale(1 1) translate(-196 0)";
@@ -118,8 +142,17 @@ export function TeddyBuddy({
   let haunchOpacity = 1;
   let ledgeOpacity = 0;
 
+  // Walking leg rotations
+  const walkSpeed = 9;
+  const legCycle = Math.sin(walkPhase * walkSpeed);
+  const ffRotate = 24 + (pose === "walk" ? legCycle * 18 : 0);
+  const fnRotate = pose === "walk" ? -legCycle * 18 : 0;
+  const bfRotate = pose === "walk" ? -legCycle * 16 : 0;
+  const bnRotate = pose === "walk" ? legCycle * 16 : 0;
+  const tailWag = pose === "walk" ? Math.sin(walkPhase * 14) * 14 - 15 : isHappy ? -8 : -20;
+
   if (pose === "walk") {
-    bodyTransform = "translate(0 -2) rotate(-6 196 206) translate(196 0) scale(1 1) translate(-196 0)";
+    bodyTransform = `translate(0 ${-2 + Math.abs(legCycle) * 2.5}) rotate(-6 196 206) translate(196 0) scale(1 1) translate(-196 0)`;
     bfOpacity = 1;
     bnOpacity = 1;
     haunchOpacity = 0;
@@ -127,7 +160,7 @@ export function TeddyBuddy({
     bodyTransform = "translate(0 2) rotate(15 196 206) translate(196 0) scale(1 1) translate(-196 0)";
     bfOpacity = 1;
     haunchOpacity = 1;
-  } else if (pose === "snug" || pose === "peek") {
+  } else if (pose === "snug" || pose === "peek" || isAsleep) {
     shadowOpacity = 0;
     bodyOpacity = 0;
     haunchOpacity = 0;
@@ -136,7 +169,7 @@ export function TeddyBuddy({
 
   const handlePointerEnter = () => {
     if (!isHappy) {
-      setBubbleText("hm?");
+      setBubbleText(isAsleep ? "zzz… zzz 🐾" : "hm?");
       setShowBubble(true);
     }
   };
@@ -149,6 +182,16 @@ export function TeddyBuddy({
 
   const handleClick = () => {
     setIsHappy(true);
+    if (isAsleep) {
+      setBubbleText("zzz… zzz 🐾");
+      setShowBubble(true);
+      setTimeout(() => {
+        setIsHappy(false);
+        setShowBubble(false);
+      }, 1500);
+      return;
+    }
+
     const phrases = ["woof!", "I like you! 🐾", "wheee!", "boing!"];
     const phrase = phrases[Math.floor(Math.random() * phrases.length)];
     setBubbleText(phrase);
@@ -159,6 +202,10 @@ export function TeddyBuddy({
       setShowBubble(false);
     }, 1500);
   };
+
+  // Center peek puppy perfectly in viewBox (x=212 shifted by -62 to x=150)
+  const isCenteredPeek = pose === "peek";
+  const rootTransform = isCenteredPeek ? "translate(-62 0)" : "translate(0 0)";
 
   return (
     <div
@@ -177,7 +224,7 @@ export function TeddyBuddy({
         aria-label={ariaLabel}
         focusable={false}
       >
-        <g data-p="root">
+        <g data-p="root" transform={rootTransform}>
           <ellipse
             data-p="shadow"
             cx="150"
@@ -190,29 +237,29 @@ export function TeddyBuddy({
             style={{ transformBox: "fill-box", transformOrigin: "center" }}
           />
           <g data-p="body" transform={bodyTransform} opacity={bodyOpacity}>
-            <g data-p="bf" transform="translate(94 192) rotate(0)" opacity={bfOpacity}>
+            <g data-p="bf" transform={`translate(94 192) rotate(${bfRotate})`} opacity={bfOpacity}>
               <path d="M-14 -14 C-14 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 14 4 14 -14Z" fill="#e4a352" />
               <path d="M-14 -14 C-14 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 14 4 14 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 29 v5 M4.5 29 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             </g>
-            <g data-p="ff" transform="translate(168 192) rotate(24)">
+            <g data-p="ff" transform={`translate(168 192) rotate(${ffRotate})`}>
               <path d="M-11 -14 C-11 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 11 4 11 -14Z" fill="#e4a352" />
               <path d="M-11 -14 C-11 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 11 4 11 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 29 v5 M4.5 29 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             </g>
-            <g data-p="tail" transform={isHappy ? "rotate(-8 84 150)" : "rotate(-20 84 150)"} style={{ transition: "transform 0.25s ease" }}>
+            <g data-p="tail" transform={`rotate(${tailWag} 84 150)`} style={{ transition: "transform 0.15s ease" }}>
               <path d="M86 152 C80 146 76 140 74 136" stroke="#2a170e" strokeWidth="9" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M86 152 C80 146 76 140 74 136" stroke="#f2be6b" strokeWidth="4" fill="none" strokeLinecap="round" />
               <path d="M70.0 110.0Q78.1 105.0 80.9 113.7Q90.5 114.8 86.7 123.2Q93.4 129.9 84.7 134.0Q85.2 143.1 75.8 141.0Q70.0 148.3 64.2 141.0Q54.8 143.1 55.3 134.0Q46.6 129.9 53.3 123.2Q49.5 114.8 59.1 113.7Q61.9 105.0 70.0 110.0Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
             </g>
-            <g data-p="bn" transform="translate(110 194) rotate(0)" opacity={bnOpacity}>
+            <g data-p="bn" transform={`translate(110 194) rotate(${bnRotate})`} opacity={bnOpacity}>
               <path d="M-15 -14 C-15 4 -12 16 -12 25 C-12 32 -7 34 0 34 C9 34 13 31 13 25 C13 16 15 4 15 -14Z" fill="#f2be6b" />
               <path d="M-15 -14 C-15 4 -12 16 -12 25 C-12 32 -7 34 0 34 C9 34 13 31 13 25 C13 16 15 4 15 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 27 v5 M4.5 27 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             </g>
             <path d="M76.8 175.6Q69.0 167.9 78.2 160.7Q76.6 151.8 90.3 147.3Q95.2 138.9 110.9 137.9Q121.6 131.3 136.7 134.0Q151.1 130.5 162.9 136.4Q178.7 136.4 185.3 144.5Q199.7 148.2 199.7 157.1Q210.3 163.7 203.9 171.9Q208.7 180.4 197.0 186.3Q195.3 195.2 180.3 198.0Q172.3 205.7 156.6 204.8Q143.7 210.0 130.0 205.6Q114.5 207.4 105.1 200.2Q89.7 198.3 86.3 189.6Q73.6 184.3 76.8 175.6Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
             <path d="M182.7 196.4Q169.4 196.9 166.6 183.0Q156.1 174.1 162.3 161.5Q159.6 147.6 171.9 142.2Q178.2 129.7 191.0 134.0Q203.3 128.7 210.5 140.8Q223.1 145.2 221.3 159.3Q228.4 171.5 218.5 181.0Q216.6 195.1 203.2 195.7Q193.3 205.1 182.7 196.4Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
-            <g data-p="fn" transform="translate(186 194) rotate(0)">
+            <g data-p="fn" transform={`translate(186 194) rotate(${fnRotate})`}>
               <path d="M-12 -14 C-12 4 -12 16 -12 25 C-12 32 -7 34 0 34 C9 34 13 31 13 25 C13 16 12 4 12 -14Z" fill="#f2be6b" />
               <path d="M-12 -14 C-12 4 -12 16 -12 25 C-12 32 -7 34 0 34 C9 34 13 31 13 25 C13 16 12 4 12 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 27 v5 M4.5 27 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
@@ -226,11 +273,13 @@ export function TeddyBuddy({
           <g
             data-p="head"
             transform={
-              isHappy
+              isAsleep
+                ? "translate(0 7) rotate(6 212 100)"
+                : isHappy
                 ? "translate(0 2) rotate(4 212 100)"
                 : `translate(0 4) rotate(${act === "tilt" ? 13 + headAngle : headAngle} 212 100)`
             }
-            style={{ transition: "transform 0.12s ease-out" }}
+            style={{ transition: "transform 0.25s ease-out" }}
           >
             <path d="M178 146 Q212 162 246 146 L246 154 Q212 170 178 154 Z" fill="#a24a1a" stroke="#2a170e" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
             <path d="M212 160 C212 156 206 155 206 159.4 C206 163 212 166.6 212 168.4 C212 166.6 218 163 218 159.4 C218 155 212 156 212 160 Z" fill="#fbe3b4" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
@@ -248,7 +297,7 @@ export function TeddyBuddy({
               transform={`translate(${eyeOffset.x.toFixed(2)} ${eyeOffset.y.toFixed(2)})`}
               style={{ transition: "transform 0.08s ease-out" }}
             >
-              <g data-p="open" opacity={isHappy || isBlinking ? 0 : 1}>
+              <g data-p="open" opacity={isHappy || isBlinking || isAsleep ? 0 : 1}>
                 <g data-p="blink" transform={isBlinking ? "scale(1 0.1)" : "scale(1 1)"} style={{ transformOrigin: "212px 98px" }}>
                   <ellipse cx="194" cy="98" rx="7.4" ry="8.6" fill="#2a170e" />
                   <ellipse cx="230" cy="98" rx="7.4" ry="8.6" fill="#2a170e" />
@@ -269,10 +318,10 @@ export function TeddyBuddy({
               strokeLinejoin="round"
               strokeLinecap="round"
               fill="none"
-              opacity={isHappy ? 1 : 0}
+              opacity={isHappy && !isAsleep ? 1 : 0}
             />
 
-            {/* Shut Eyelids when Blinking */}
+            {/* Shut Eyelids when Blinking or Sleeping */}
             <path
               data-p="shut"
               d="M186.5 97 Q194 103.5 201.5 97 M222.5 97 Q230 103.5 237.5 97"
@@ -281,20 +330,38 @@ export function TeddyBuddy({
               strokeLinejoin="round"
               strokeLinecap="round"
               fill="none"
-              opacity={isBlinking && !isHappy ? 1 : 0}
+              opacity={isAsleep || (isBlinking && !isHappy) ? 1 : 0}
             />
 
             <path d="M204.5 111.5 Q212 107.2 219.5 111.5 Q218.2 118.4 212 120 Q205.8 118.4 204.5 111.5 Z" fill="#2a170e" />
             <path d="M212 120 V124.5 M212 124.5 Q207.2 129.6 202.8 125.2 M212 124.5 Q216.8 129.6 221.2 125.2" stroke="#2a170e" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" fill="none" />
-            <path data-p="tongue" d="M207.6 127.4 Q212 136.6 216.4 127.4 Z" fill="#e98c8c" stroke="#2a170e" strokeWidth="2.2" strokeLinejoin="round" opacity="1" />
+            <path data-p="tongue" d="M207.6 127.4 Q212 136.6 216.4 127.4 Z" fill="#e98c8c" stroke="#2a170e" strokeWidth="2.2" strokeLinejoin="round" opacity={isAsleep ? 0 : 1} />
             
             {/* Paw Pat Effect when clicked/petted */}
-            {isHappy && (
+            {isHappy && !isAsleep && (
               <g transform="translate(202 38) scale(0.4) rotate(15)" opacity="0.85">
                 <path
                   d="M32 30.5c-7.6 0-15.6 8.3-15.6 15.5 0 5.4 4.2 8.3 9.2 8.3 2.6 0 4.5-1.1 6.4-1.1s3.8 1.1 6.4 1.1c5 0 9.2-2.9 9.2-8.3 0-7.2-8-15.5-15.6-15.5zM19.28 26.71C21.07 30.08 20.42 33.92 17.84 35.29C15.25 36.67 11.71 35.05 9.92 31.69C8.13 28.32 8.78 24.48 11.36 23.11C13.95 21.73 17.49 23.35 19.28 26.71ZM29.62 15.64C30.32 19.62 28.46 23.26 25.47 23.79C22.48 24.32 19.48 21.53 18.78 17.56C18.08 13.58 19.94 9.94 22.93 9.41C25.92 8.88 28.92 11.67 29.62 15.64ZM45.22 17.56C44.52 21.53 41.52 24.32 38.53 23.79C35.54 23.26 33.68 19.62 34.38 15.64C35.08 11.67 38.08 8.88 41.07 9.41C44.06 9.94 45.92 13.58 45.22 17.56ZM54.08 31.69C52.29 35.05 48.75 36.67 46.16 35.29C43.58 33.92 42.93 30.08 44.72 26.71C46.51 23.35 50.05 21.73 52.64 23.11C55.22 24.48 55.87 28.32 54.08 31.69Z"
                   fill="#c2622b"
                 />
+              </g>
+            )}
+
+            {/* Peaceful Sleeping Floating Zzz */}
+            {isAsleep && (
+              <g className="tp-sleep-zzz pointer-events-none select-none" aria-hidden="true">
+                <text x="246" y="68" fill="#a24a1a" fontSize="13" fontFamily="var(--font-hand), cursive" fontWeight="bold">
+                  z
+                  <animate attributeName="y" values="68;48;28" dur="2.4s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0;0.9;0" dur="2.4s" repeatCount="indefinite" />
+                  <animate attributeName="x" values="246;252;258" dur="2.4s" repeatCount="indefinite" />
+                </text>
+                <text x="256" y="52" fill="#a24a1a" fontSize="17" fontFamily="var(--font-hand), cursive" fontWeight="bold">
+                  Z
+                  <animate attributeName="y" values="52;32;12" dur="2.4s" begin="0.8s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0;0.9;0" dur="2.4s" begin="0.8s" repeatCount="indefinite" />
+                  <animate attributeName="x" values="256;264;272" dur="2.4s" begin="0.8s" repeatCount="indefinite" />
+                </text>
               </g>
             )}
           </g>

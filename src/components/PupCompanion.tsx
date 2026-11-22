@@ -9,7 +9,7 @@ interface StopItem {
   docLeft: number;
   width: number;
   scale: number;
-  pose: "sit" | "bow" | "snug" | "peek" | "walk";
+  pose: "sit" | "bow" | "snug" | "peek" | "walk" | "sleep";
   facing: "left" | "right";
   act?: "tilt" | "basket" | "treadmill" | "peekaboo";
   behind: boolean;
@@ -17,12 +17,12 @@ interface StopItem {
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (val: number, min = 0, max = 1) => Math.min(max, Math.max(min, val));
-// Perlin smootherstep polynomial: 6t^5 - 15t^4 + 10t^3 (zero velocity & zero jerk at endpoints)
+// Quintic smootherstep polynomial (6t^5 - 15t^4 + 10t^3): 0 velocity and 0 acceleration at endpoints
 const smootherstep = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
 
 export function PupCompanion() {
   const [mounted, setMounted] = useState(false);
-  const [currentPose, setCurrentPose] = useState<"sit" | "bow" | "snug" | "peek" | "walk">("peek");
+  const [currentPose, setCurrentPose] = useState<"sit" | "bow" | "snug" | "peek" | "walk" | "sleep">("peek");
   const [currentFacing, setCurrentFacing] = useState<"left" | "right">("right");
   const [currentAct, setCurrentAct] = useState<"tilt" | "basket" | "treadmill" | "peekaboo" | undefined>();
   const [isFront, setIsFront] = useState(false);
@@ -36,7 +36,7 @@ export function PupCompanion() {
   const lastStampPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Active state caches to prevent unnecessary React renders during 120fps RAF loop
-  const activePoseRef = useRef<"sit" | "bow" | "snug" | "peek" | "walk">("peek");
+  const activePoseRef = useRef<"sit" | "bow" | "snug" | "peek" | "walk" | "sleep">("peek");
   const activeFacingRef = useRef<"left" | "right">("right");
   const activeActRef = useRef<"tilt" | "basket" | "treadmill" | "peekaboo" | undefined>(undefined);
   const activeFrontRef = useRef<boolean>(false);
@@ -83,7 +83,7 @@ export function PupCompanion() {
 
     updateStops();
 
-    // ResizeObserver recalculates whenever images finish loading or page layout expands
+    // ResizeObserver recalculates whenever images finish loading or page layout shifts
     const resizeObserver = new ResizeObserver(() => {
       updateStops();
     });
@@ -100,6 +100,7 @@ export function PupCompanion() {
 
       const scrollY = window.scrollY;
       const vh = window.innerHeight;
+      const vw = document.documentElement.clientWidth;
       const focalY = scrollY + vh * 0.48;
 
       let curX = stops[0].docLeft;
@@ -113,24 +114,29 @@ export function PupCompanion() {
       const firstStop = stops[0];
       const lastStop = stops[stops.length - 1];
 
+      // Measure quilt curve edge for initial Hero position
+      const quiltEl = document.querySelector<HTMLElement>(".tp-quilt__edge, .tp-quilt");
+      const quiltTop = quiltEl ? quiltEl.getBoundingClientRect().top : firstStop.docTop - scrollY;
+
       if (focalY <= firstStop.docTop) {
-        // At the very top (Hero Scene)
-        curX = firstStop.docLeft;
-        curY = firstStop.docTop - scrollY;
+        // Initial Position: In the middle of the horizontal line of the page (50vw),
+        // sitting cleanly above the scalloped quilt curve lines
+        curX = vw / 2 - 150 * firstStop.scale;
+        curY = quiltTop - 150 * firstStop.scale;
         scale = firstStop.scale;
-        pose = firstStop.pose;
+        pose = "peek";
         facing = firstStop.facing;
         act = firstStop.act;
-        behind = firstStop.behind;
+        behind = true;
       } else if (focalY >= lastStop.docTop) {
-        // At the very bottom (Footer Basket)
+        // At the bottom of the page (in the basket circle): sleep peacefully!
         curX = lastStop.docLeft;
         curY = lastStop.docTop - scrollY;
         scale = lastStop.scale;
-        pose = lastStop.pose;
+        pose = "sleep";
         facing = lastStop.facing;
-        act = lastStop.act;
-        behind = lastStop.behind;
+        act = "basket";
+        behind = true;
       } else {
         // Find segment k where stops[k].docTop <= focalY < stops[k+1].docTop
         let k = 0;
@@ -145,14 +151,18 @@ export function PupCompanion() {
         const span = Math.max(60, s1.docTop - s0.docTop);
         const p = clamp((focalY - s0.docTop) / span);
 
-        // Responsive hold threshold: rest cleanly at each stop, walk actively between them
-        const holdStart = 0.12;
-        const holdEnd = 0.88;
+        const holdStart = 0.10;
+        const holdEnd = 0.90;
 
         if (p < holdStart) {
-          // Resting at stop s0
-          curX = s0.docLeft;
-          curY = s0.docTop - scrollY;
+          // Resting cleanly at stop s0
+          if (k === 0) {
+            curX = vw / 2 - 150 * s0.scale;
+            curY = quiltTop - 150 * s0.scale;
+          } else {
+            curX = s0.docLeft;
+            curY = s0.docTop - scrollY;
+          }
           scale = s0.scale;
           pose = s0.pose;
           facing = s0.facing;
@@ -163,36 +173,44 @@ export function PupCompanion() {
           curX = s1.docLeft;
           curY = s1.docTop - scrollY;
           scale = s1.scale;
-          pose = s1.pose;
+          // When arrived at the last stop (Basket), sleep!
+          pose = k + 1 === stops.length - 1 ? "sleep" : s1.pose;
           facing = s1.facing;
           act = s1.act;
           behind = s1.behind;
         } else {
-          // ACTIVELY WALKING / TRAVELING BETWEEN STOPS
+          // ACTIVELY WALKING / TRAVELING BETWEEN STOPS WITH ULTRA-SMOOTH EASING
           const u = clamp((p - holdStart) / (holdEnd - holdStart));
           const w = smootherstep(u);
 
-          pose = "walk";
+          // If approaching the footer basket, smoothly transition into sleep near touchdown
+          pose = k + 1 === stops.length - 1 && u > 0.82 ? "sleep" : "walk";
           act = undefined;
           behind = false; // Always in front while traveling
           facing = s1.docLeft >= s0.docLeft ? "right" : "left";
 
           scale = lerp(s0.scale, s1.scale, w);
 
-          // Interpolate coordinate path between s0 and s1
-          const startX = s0.docLeft;
+          let startX = s0.docLeft;
+          let startY = s0.docTop - scrollY;
+          if (k === 0) {
+            startX = vw / 2 - 150 * s0.scale;
+            startY = quiltTop - 150 * s0.scale;
+          }
+
           const endX = s1.docLeft;
-          const startY = s0.docTop - scrollY;
           const endY = s1.docTop - scrollY;
 
-          curX = lerp(startX, endX, w);
+          // Natural organic S-curve lateral glide
+          const lateralBend = Math.sin(u * Math.PI) * (endX >= startX ? 14 : -14);
+          curX = lerp(startX, endX, w) + lateralBend;
           curY = lerp(startY, endY, w);
 
           // Playful hop arc
-          const hop = Math.sin(u * Math.PI) * 32;
+          const hop = Math.sin(u * Math.PI) * 30;
           curY -= hop;
 
-          // Stamp golden paw prints along the movement trajectory
+          // Stamp 24 golden background paw prints along the dog's path
           if (printsRef.current) {
             const paws = printsRef.current.children;
             if (paws.length > 0) {

@@ -130,6 +130,16 @@ html {
   pointer-events: none;
 }
 
+/* Hero Peeking Mascot Teddy - Exactly centered horizontally above quilt curve lines */
+.tp-hero__teddy {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: calc(var(--quilt-h, clamp(4.5rem, 12vh, 8rem)) + 38px - var(--tw, clamp(15rem, min(30vw, 46vh), 27rem)) * 0.27) !important;
+  width: var(--tw, clamp(15rem, min(30vw, 46vh), 27rem)) !important;
+  z-index: 20 !important;
+}
+
 /* Tape Effect */
 .tp-tape {
   position: absolute;
