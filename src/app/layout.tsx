@@ -8,6 +8,7 @@ import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { RevealScope } from "@/components/RevealScope";
 import { PupCursorTrail } from "@/components/PupCursorTrail";
+import { PupCompanion } from "@/components/PupCompanion";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -74,6 +75,7 @@ export default function RootLayout({
     >
       <body className="bg-milk text-cocoa antialiased min-h-screen flex flex-col font-sans selection:bg-honey selection:text-cocoa relative">
         <PupCursorTrail />
+        <PupCompanion />
         <SmoothScroll>
           <Header />
           <main id="main" tabIndex={-1} className="flex-1 pt-[var(--header-h)] outline-none">

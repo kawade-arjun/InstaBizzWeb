@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export interface TeddyBuddyProps {
   pose?: "sit" | "bow" | "snug" | "peek" | "walk";
   facing?: "left" | "right";
   className?: string;
   ariaLabel?: string;
+  responsiveCursor?: boolean;
 }
 
 export function TeddyBuddy({
@@ -14,10 +15,98 @@ export function TeddyBuddy({
   facing = "right",
   className = "",
   ariaLabel = "Teddy, the TeddyPups puppy",
+  responsiveCursor = true,
 }: TeddyBuddyProps) {
+  const dogRef = useRef<HTMLDivElement>(null);
+
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleText, setBubbleText] = useState("hm?");
   const [isHappy, setIsHappy] = useState(false);
+  const [isBlinking, setIsBlinking] = useState(false);
+
+  // Responsive eye offset and head tilt towards cursor
+  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
+  const [headAngle, setHeadAngle] = useState(0);
+  const [currentFacing, setCurrentFacing] = useState(facing);
+
+  useEffect(() => {
+    setCurrentFacing(facing);
+  }, [facing]);
+
+  // Periodic natural blinking
+  useEffect(() => {
+    let blinkTimer: NodeJS.Timeout;
+    let shutTimer: NodeJS.Timeout;
+
+    const scheduleNextBlink = () => {
+      // Natural interval between 2.8s and 5.2s
+      const delay = 2800 + Math.random() * 2400;
+      blinkTimer = setTimeout(() => {
+        setIsBlinking(true);
+        // Eyelid closes for 130ms
+        shutTimer = setTimeout(() => {
+          setIsBlinking(false);
+          scheduleNextBlink();
+        }, 130);
+      }, delay);
+    };
+
+    scheduleNextBlink();
+
+    return () => {
+      clearTimeout(blinkTimer);
+      clearTimeout(shutTimer);
+    };
+  }, []);
+
+  // Real-time cursor tracking
+  useEffect(() => {
+    if (!responsiveCursor) return;
+
+    let rafId: number;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!dogRef.current) return;
+        const rect = dogRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const dx = e.clientX - centerX;
+        const dy = e.clientY - centerY;
+        const dist = Math.hypot(dx, dy);
+
+        // Maximum pupil displacement in SVG coordinate space
+        const maxRx = 4.2;
+        const maxRy = 3.0;
+        const influence = Math.min(1, dist / 200);
+        const angle = Math.atan2(dy, dx);
+
+        const lookX = Math.cos(angle) * maxRx * influence;
+        const lookY = Math.sin(angle) * maxRy * influence;
+
+        setEyeOffset({ x: lookX, y: lookY });
+
+        // Gentle head tilt towards cursor
+        const tilt = Math.max(-7, Math.min(7, (dx / (window.innerWidth || 1000)) * 14));
+        setHeadAngle(tilt);
+
+        // Turn facing direction if cursor moves past center
+        if (dx < -60) {
+          setCurrentFacing("left");
+        } else if (dx > 60) {
+          setCurrentFacing("right");
+        }
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [responsiveCursor]);
 
   let shadowOpacity = 0.12;
   let bodyTransform = "translate(0 -2) rotate(-24 196 206) translate(196 0) scale(1 1) translate(-196 0)";
@@ -71,8 +160,10 @@ export function TeddyBuddy({
 
   return (
     <div
+      ref={dogRef}
       className={`pup-buddy cursor-pointer relative select-none ${className}`}
-      data-facing={facing}
+      data-facing={currentFacing}
+      data-live="true"
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
@@ -102,7 +193,7 @@ export function TeddyBuddy({
               <path d="M-14 -14 C-14 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 14 4 14 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 29 v5 M4.5 29 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             </g>
-            <g data-p="ff" transform="translate(168 192) rotate(0)">
+            <g data-p="ff" transform="translate(168 192) rotate(24)">
               <path d="M-11 -14 C-11 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 11 4 11 -14Z" fill="#e4a352" />
               <path d="M-11 -14 C-11 4 -12 18 -12 27 C-12 34 -7 36 0 36 C9 36 13 33 13 27 C13 18 11 4 11 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 29 v5 M4.5 29 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
@@ -130,7 +221,15 @@ export function TeddyBuddy({
             <path d="M112 214 C126 212 142 214 146 221 C148 226 144 229 136 229 L116 229 C108 229 104 224 106 219 Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
             <path d="M132 222v5M139 222v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
           </g>
-          <g data-p="head" transform={isHappy ? "translate(0 2) rotate(4 212 100)" : "translate(0 4) rotate(0 212 100)"} style={{ transition: "transform 0.25s ease" }}>
+          <g
+            data-p="head"
+            transform={
+              isHappy
+                ? "translate(0 2) rotate(4 212 100)"
+                : `translate(0 4) rotate(${headAngle} 212 100)`
+            }
+            style={{ transition: "transform 0.12s ease-out" }}
+          >
             <path d="M178 146 Q212 162 246 146 L246 154 Q212 170 178 154 Z" fill="#a24a1a" stroke="#2a170e" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
             <path d="M212 160 C212 156 206 155 206 159.4 C206 163 212 166.6 212 168.4 C212 166.6 218 163 218 159.4 C218 155 212 156 212 160 Z" fill="#fbe3b4" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
             <path data-p="earL" d="M177.1 78.7Q186.9 70.8 186.6 87.4Q196.0 89.9 189.9 105.5Q195.2 117.3 185.5 126.0Q184.7 142.8 175.2 141.2Q168.7 156.5 162.9 145.3Q153.1 153.2 153.4 136.6Q144.0 134.1 150.1 118.5Q144.8 106.7 154.5 98.0Q155.3 81.2 164.8 82.8Q171.3 67.5 177.1 78.7Z" fill="#e4a352" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" transform="rotate(-6 174 82)" />
@@ -140,9 +239,15 @@ export function TeddyBuddy({
             <path d="M188 120 C188 106 200 100 212 100 C224 100 236 106 236 120 C236 133 225 140 212 140 C199 140 188 133 188 120 Z" fill="#fbe3b4" />
             <circle cx="181" cy="116" r="7" fill="#f9b9a6" opacity="0.85" />
             <circle cx="243" cy="116" r="7" fill="#f9b9a6" opacity="0.85" />
-            <g data-p="eyes" transform="translate(0 0)">
-              <g data-p="open" opacity={isHappy ? 0 : 1}>
-                <g data-p="blink" transform="translate(0 0) scale(1 1)">
+            
+            {/* Pupil eye tracking & natural blink */}
+            <g
+              data-p="eyes"
+              transform={`translate(${eyeOffset.x.toFixed(2)} ${eyeOffset.y.toFixed(2)})`}
+              style={{ transition: "transform 0.08s ease-out" }}
+            >
+              <g data-p="open" opacity={isHappy || isBlinking ? 0 : 1}>
+                <g data-p="blink" transform={isBlinking ? "scale(1 0.1)" : "scale(1 1)"} style={{ transformOrigin: "212px 98px" }}>
                   <ellipse cx="194" cy="98" rx="7.4" ry="8.6" fill="#2a170e" />
                   <ellipse cx="230" cy="98" rx="7.4" ry="8.6" fill="#2a170e" />
                   <circle cx="196.6" cy="94.6" r="2.7" fill="#fff" />
@@ -152,8 +257,31 @@ export function TeddyBuddy({
                 </g>
               </g>
             </g>
-            <path data-p="happy" d="M186.5 101 Q194 91.5 201.5 101 M222.5 101 Q230 91.5 237.5 101" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" opacity={isHappy ? 1 : 0} />
-            <path data-p="shut" d="M186.5 97 Q194 103.5 201.5 97 M222.5 97 Q230 103.5 237.5 97" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" opacity={0} />
+
+            {/* Happy Curved Eyes on Click */}
+            <path
+              data-p="happy"
+              d="M186.5 101 Q194 91.5 201.5 101 M222.5 101 Q230 91.5 237.5 101"
+              stroke="#2a170e"
+              strokeWidth="3.4"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              fill="none"
+              opacity={isHappy ? 1 : 0}
+            />
+
+            {/* Shut Eyelids when Blinking */}
+            <path
+              data-p="shut"
+              d="M186.5 97 Q194 103.5 201.5 97 M222.5 97 Q230 103.5 237.5 97"
+              stroke="#2a170e"
+              strokeWidth="3.4"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              fill="none"
+              opacity={isBlinking && !isHappy ? 1 : 0}
+            />
+
             <path d="M204.5 111.5 Q212 107.2 219.5 111.5 Q218.2 118.4 212 120 Q205.8 118.4 204.5 111.5 Z" fill="#2a170e" />
             <path d="M212 120 V124.5 M212 124.5 Q207.2 129.6 202.8 125.2 M212 124.5 Q216.8 129.6 221.2 125.2" stroke="#2a170e" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             <path data-p="tongue" d="M207.6 127.4 Q212 136.6 216.4 127.4 Z" fill="#e98c8c" stroke="#2a170e" strokeWidth="2.2" strokeLinejoin="round" opacity="1" />
