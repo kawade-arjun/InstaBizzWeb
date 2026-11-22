@@ -5,12 +5,14 @@ import puppiesData from "@/data/puppies.json";
 import familiesData from "@/data/happy_families.json";
 import faqsData from "@/data/faqs.json";
 import { Puppy } from "@/components/PuppyCard";
+import { TeddyBuddy } from "@/components/TeddyBuddy";
 
 export default function HomePage() {
   const allPuppies = puppiesData as Puppy[];
   const availablePuppies = allPuppies.filter((p) => p.status === "available");
   const heroPuppies = availablePuppies.slice(0, 5);
   const hallPuppies = availablePuppies.slice(0, 8);
+  const hallPuppiesLoop = [...hallPuppies, ...hallPuppies];
   const polaroids = familiesData.slice(0, 10);
   const homeFaqs = faqsData.slice(0, 3);
 
@@ -199,13 +201,13 @@ export default function HomePage() {
               {/* The Hall of Doors */}
               <div className="tp-meet__hall">
                 <ol className="tp-meet__track" data-treadmill="true" aria-label="Puppies looking for a family">
-                  {hallPuppies.map((pup, i) => {
+                  {hallPuppiesLoop.map((pup, i) => {
                     const doorColors = ["#a24a1a", "#c2622b", "#8e3f15", "#a65a30", "#5a3a28"];
                     const doorColor = doorColors[i % doorColors.length];
                     const imgUrl = pup.media[0]?.url || "/brand/logo.png";
 
                     return (
-                      <li key={pup.id} className="tp-door" data-open="true">
+                      <li key={`${pup.id}-${i}`} className="tp-door" data-open="true">
                         <Link
                           className="tp-door__link"
                           style={{ "--door": doorColor } as React.CSSProperties}
@@ -215,7 +217,7 @@ export default function HomePage() {
                           <span className="tp-door__plate">
                             <span className="font-plush tp-door__name">{pup.name}</span>
                             <span className="tp-door__meta">
-                              {pup.breed}, {pup.gender}, {pup.age}
+                              {pup.breed}, {pup.gender === "male" ? "boy" : "girl"}, {pup.age}
                               {pup.hasVideo ? ", with video" : ""}
                             </span>
                           </span>
@@ -231,12 +233,32 @@ export default function HomePage() {
                                 sizes="(min-width: 1024px) 15rem, 44vw"
                               />
                             </span>
+                            <span aria-hidden="true" className="tp-door__way">
+                              <span className="tp-door__leaf">
+                                <svg viewBox="0 0 64 64" className="tp-door__peephole" aria-hidden="true" fill="currentColor">
+                                  <path d="M32 30.5c-7.6 0-15.6 8.3-15.6 15.5 0 5.4 4.2 8.3 9.2 8.3 2.6 0 4.5-1.1 6.4-1.1s3.8 1.1 6.4 1.1c5 0 9.2-2.9 9.2-8.3 0-7.2-8-15.5-15.6-15.5zM19.28 26.71C21.07 30.08 20.42 33.92 17.84 35.29C15.25 36.67 11.71 35.05 9.92 31.69C8.13 28.32 8.78 24.48 11.36 23.11C13.95 21.73 17.49 23.35 19.28 26.71ZM29.62 15.64C30.32 19.62 28.46 23.26 25.47 23.79C22.48 24.32 19.48 21.53 18.78 17.56C18.08 13.58 19.94 9.94 22.93 9.41C25.92 8.88 28.92 11.67 29.62 15.64ZM45.22 17.56C44.52 21.53 41.52 24.32 38.53 23.79C35.54 23.26 33.68 19.62 34.38 15.64C35.08 11.67 38.08 8.88 41.07 9.41C44.06 9.94 45.92 13.58 45.22 17.56ZM54.08 31.69C52.29 35.05 48.75 36.67 46.16 35.29C43.58 33.92 42.93 30.08 44.72 26.71C46.51 23.35 50.05 21.73 52.64 23.11C55.22 24.48 55.87 28.32 54.08 31.69Z" />
+                                </svg>
+                                <span className="tp-door__knob" />
+                              </span>
+                            </span>
+                            <span className="tp-door__tag font-scrawl">Available</span>
                           </span>
                         </Link>
                       </li>
                     );
                   })}
+                  <li className="tp-door tp-door--all" data-open="true">
+                    <Link className="tp-door__link" href="/puppies">
+                      <span className="tp-door__frame tp-door__frame--all">
+                        <span className="font-plush tp-door__all">Meet them all</span>
+                      </span>
+                    </Link>
+                  </li>
                 </ol>
+                <div aria-hidden="true" className="tp-meet__floor" />
+                <div data-pup-stop="true" data-pose="sit" data-facing="right" className="pup-stop tp-meet__teddy">
+                  <TeddyBuddy pose="sit" facing="right" />
+                </div>
               </div>
             </div>
           </div>
@@ -358,6 +380,10 @@ export default function HomePage() {
                   See imported puppies
                 </Link>
               </article>
+
+              <div data-pup-stop="true" data-pose="sit" data-facing="right" className="pup-stop tp-fork__teddy">
+                <TeddyBuddy pose="sit" facing="right" />
+              </div>
             </div>
           </div>
         </section>
@@ -689,6 +715,10 @@ export default function HomePage() {
               <h2 id="questions-title" className="font-plush text-huge">
                 Questions, answered
               </h2>
+              <span aria-hidden="true" className="tp-night__wonder font-plush">?</span>
+              <div data-pup-stop="true" data-pose="sit" data-facing="right" data-act="tilt" className="pup-stop tp-night__teddy">
+                <TeddyBuddy pose="sit" facing="right" />
+              </div>
               <Link className="btn btn-ghost tp-night__cta mt-6 inline-block" href="/faq">
                 Read all questions
               </Link>
@@ -763,6 +793,9 @@ export default function HomePage() {
             <span aria-hidden="true" className="tp-house__mat font-scrawl block text-center mt-3 text-honey/90 text-sm">
               welcome home
             </span>
+            <div data-pup-stop="true" data-pose="bow" data-facing="right" className="pup-stop tp-house__teddy">
+              <TeddyBuddy pose="bow" facing="right" />
+            </div>
           </div>
 
           <div className="tp-home__actions mt-10 pb-20 flex flex-wrap justify-center gap-4">

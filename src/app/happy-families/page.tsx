@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import familiesData from "@/data/happy_families.json";
+import { HappyFamiliesWall } from "@/components/HappyFamiliesWall";
 
 export const metadata: Metadata = {
   title: "Happy families & puppy moments | TeddyPups U.A.E.",
@@ -11,9 +11,6 @@ export const metadata: Metadata = {
 
 export default function HappyFamiliesPage() {
   const families = familiesData;
-
-  const tilts = ["-2.2deg", "1.6deg", "-1.8deg", "2.1deg", "-0.8deg", "1.4deg", "-2.5deg"];
-  const tapeColors = ["#f6d79a", "#cfe5f6", "#f9cdbf", "#fbe3b4"];
 
   return (
     <div data-page="families" className="tp-page">
@@ -64,46 +61,9 @@ export default function HappyFamiliesPage() {
             </figure>
           </div>
 
-          {/* Polaroid Photo Wall */}
+          {/* Polaroid Photo Wall with Interactive Lightbox */}
           <div className="mt-16 md:mt-20">
-            <ul className="tp-wall" aria-label="Photos from TeddyPups families">
-              {families.map((fam, i) => {
-                const tilt = tilts[i % tilts.length];
-                const tape = tapeColors[i % tapeColors.length];
-
-                return (
-                  <li
-                    key={fam.id}
-                    className="tp-wall__item"
-                    data-reveal="true"
-                    style={{ "--d": `${(i % 8) * 60}ms` } as React.CSSProperties}
-                  >
-                    <div className="tp-wall__print">
-                      <span
-                        className="tp-polaroid block bg-white p-3 pb-6 rounded-md shadow-lg hover:shadow-2xl transition-all"
-                        style={{ "--tilt": tilt, "--tape": tape, "--i": i } as React.CSSProperties}
-                      >
-                        <span aria-hidden="true" className="tp-tape tp-tape--center" />
-                        <span className="tp-polaroid__photo block relative aspect-square overflow-hidden rounded bg-honey/10">
-                          <Image
-                            alt={fam.caption || `TeddyPups family photo ${i + 1}`}
-                            src={fam.url}
-                            fill
-                            sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
-                            className="object-cover"
-                          />
-                        </span>
-                        {fam.caption && (
-                          <span className="font-scrawl text-cocoa text-center block text-xs mt-3 truncate px-1">
-                            {fam.caption}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <HappyFamiliesWall families={families} />
           </div>
         </div>
       </section>

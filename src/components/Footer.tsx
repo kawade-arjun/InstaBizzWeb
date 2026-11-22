@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { TeddyBuddy } from "@/components/TeddyBuddy";
 
 const twinkleStars = [
   { left: "6%", top: "18%", width: 12.6, delay: "0.00s" },
@@ -79,15 +80,7 @@ export function Footer() {
               data-lane="true"
               className="pup-stop tp-basket__pup"
             >
-              <div className="pup-buddy" data-facing="right">
-                <Image
-                  src="/brand/logo.png"
-                  alt="Teddy sitting snug in basket"
-                  width={140}
-                  height={140}
-                  className="rounded-full object-cover size-28 shadow-xl"
-                />
-              </div>
+              <TeddyBuddy pose="snug" facing="right" ariaLabel="Teddy, sitting snug in his basket" />
             </div>
           </div>
         </div>

@@ -265,3 +265,28 @@ html {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-12px); }
 }
+
+/* Treadmill Marquee Animation for Doors */
+@keyframes tp-treadmill {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.tp-meet__hall {
+  overflow-x: hidden;
+  position: relative;
+}
+
+[data-treadmill="true"] {
+  display: flex !important;
+  width: max-content !important;
+  animation: tp-treadmill 38s linear infinite;
+}
+
+[data-treadmill="true"]:hover {
+  animation-play-state: paused;
+}
