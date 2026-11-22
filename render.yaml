@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: teddypups-uae
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: MONGODB_DB
+        value: teddypups
+      - key: MONGODB_URI
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: NEXT_PUBLIC_WHATSAPP_NUMBER
+        value: "+971500000000"
