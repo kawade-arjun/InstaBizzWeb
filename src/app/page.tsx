@@ -10,7 +10,7 @@ import { TeddyBuddy } from "@/components/TeddyBuddy";
 export default function HomePage() {
   const allPuppies = puppiesData as Puppy[];
   const availablePuppies = allPuppies.filter((p) => p.status === "available");
-  const heroPuppies = availablePuppies.slice(0, 5);
+  const heroPuppies = availablePuppies.slice(0, 6);
   const hallPuppies = availablePuppies.slice(0, 8);
   const hallPuppiesLoop = [...hallPuppies, ...hallPuppies];
   const polaroids = familiesData.slice(0, 10);
@@ -90,10 +90,11 @@ export default function HomePage() {
               {heroPuppies.map((pup, i) => {
                 const seatConfigs = [
                   { x: "9%", w: "8.6rem", peek: 0.62, tilt: "-5deg" },
-                  { x: "28%", w: "9.2rem", peek: 0.68, tilt: "4deg" },
-                  { x: "50%", w: "10rem", peek: 0.75, tilt: "-2deg" },
-                  { x: "72%", w: "9.2rem", peek: 0.65, tilt: "5deg" },
-                  { x: "91%", w: "8.6rem", peek: 0.60, tilt: "-4deg" },
+                  { x: "22.5%", w: "10.4rem", peek: 0.8, tilt: "3deg" },
+                  { x: "35%", w: "9.2rem", peek: 0.7, tilt: "-2deg" },
+                  { x: "65%", w: "9.4rem", peek: 0.74, tilt: "3deg" },
+                  { x: "77.5%", w: "10.6rem", peek: 0.82, tilt: "-3deg" },
+                  { x: "91%", w: "8.4rem", peek: 0.6, tilt: "4deg" },
                 ];
                 const cfg = seatConfigs[i % seatConfigs.length];
                 const imgUrl = pup.media[0]?.url || "/brand/logo.png";
@@ -123,7 +124,7 @@ export default function HomePage() {
                           src={imgUrl}
                           alt={`${pup.name}, ${pup.gender} ${pup.breed}`}
                           fill
-                          priority={i === 2}
+                          priority={i < 3}
                           className="object-cover"
                           sizes="(max-width: 768px) 30vw, 15rem"
                         />
@@ -134,6 +135,19 @@ export default function HomePage() {
                 );
               })}
             </ul>
+
+            {/* Mascot Teddy Peeking Center atop Quilt */}
+            <div
+              data-pup-stop="true"
+              data-pose="peek"
+              data-facing="right"
+              data-act="peekaboo"
+              data-behind="true"
+              data-lane="true"
+              className="pup-stop tp-hero__teddy"
+            >
+              <TeddyBuddy pose="peek" facing="right" ariaLabel="Teddy, the TeddyPups puppy, peeking over the quilt" />
+            </div>
 
             {/* Scalloped Quilt Border with Stitches */}
             <div aria-hidden="true" className="tp-quilt">

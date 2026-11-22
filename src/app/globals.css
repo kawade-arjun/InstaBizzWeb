@@ -266,27 +266,32 @@ html {
   50% { transform: translateY(-12px); }
 }
 
-/* Treadmill Marquee Animation for Doors */
-@keyframes tp-treadmill {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+/* Custom Paw Cursor from Reference Website */
+html, body {
+  cursor: url("/cursor/paw.svg") 9 6, auto;
 }
 
+a, button, summary, label[for], [role="button"], [role="tab"], select, input[type="submit"], input[type="button"] {
+  cursor: url("/cursor/paw-press.svg") 9 6, pointer;
+}
+
+input:not([type="checkbox"], [type="radio"], [type="submit"], [type="range"]), textarea, [contenteditable="true"] {
+  cursor: text;
+}
+
+/* Hall of Doors Layout (Smooth scroll, no runaway movement) */
 .tp-meet__hall {
-  overflow-x: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   position: relative;
+}
+
+.tp-meet__hall::-webkit-scrollbar {
+  display: none;
 }
 
 [data-treadmill="true"] {
   display: flex !important;
   width: max-content !important;
-  animation: tp-treadmill 38s linear infinite;
-}
-
-[data-treadmill="true"]:hover {
-  animation-play-state: paused;
 }

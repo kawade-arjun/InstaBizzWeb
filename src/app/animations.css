@@ -75,15 +75,11 @@
   animation: tp-tag-swing 1.2s var(--ease-pounce);
 }
 
-/* Hero Lineup Puppies Hover & Bobbing */
-.tp-lineup__seat {
-  animation: tp-peek 4s ease-in-out infinite alternate;
+/* Hero Lineup Puppies Entrance (no continuous bobbing) */
+.tp-lineup__pup {
+  animation: tp-peek 0.75s var(--ease-pounce) backwards;
+  animation-delay: calc(0.35s + var(--i, 0) * 80ms);
 }
-
-.tp-lineup__seat:nth-child(2) { animation-delay: -1.2s; }
-.tp-lineup__seat:nth-child(3) { animation-delay: -2.5s; }
-.tp-lineup__seat:nth-child(4) { animation-delay: -0.7s; }
-.tp-lineup__seat:nth-child(5) { animation-delay: -1.8s; }
 
 
 /* Exact Brand Keyframes */
