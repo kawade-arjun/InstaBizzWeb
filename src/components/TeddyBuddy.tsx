@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 export interface TeddyBuddyProps {
-  pose?: "sit" | "bow" | "snug" | "peek";
+  pose?: "sit" | "bow" | "snug" | "peek" | "walk";
   facing?: "left" | "right";
   className?: string;
   ariaLabel?: string;
@@ -23,18 +23,23 @@ export function TeddyBuddy({
   let bodyTransform = "translate(0 -2) rotate(-24 196 206) translate(196 0) scale(1 1) translate(-196 0)";
   let bodyOpacity = 1;
   let bfOpacity = 0;
+  let bnOpacity = 0;
+  let haunchOpacity = 1;
   let ledgeOpacity = 0;
 
-  if (pose === "bow") {
+  if (pose === "walk") {
+    bodyTransform = "translate(0 -2) rotate(-6 196 206) translate(196 0) scale(1 1) translate(-196 0)";
+    bfOpacity = 1;
+    bnOpacity = 1;
+    haunchOpacity = 0;
+  } else if (pose === "bow") {
     bodyTransform = "translate(0 2) rotate(15 196 206) translate(196 0) scale(1 1) translate(-196 0)";
     bfOpacity = 1;
-  } else if (pose === "snug") {
+    haunchOpacity = 1;
+  } else if (pose === "snug" || pose === "peek") {
     shadowOpacity = 0;
     bodyOpacity = 0;
-    ledgeOpacity = 1;
-  } else if (pose === "peek") {
-    shadowOpacity = 0;
-    bodyOpacity = 0;
+    haunchOpacity = 0;
     ledgeOpacity = 1;
   }
 
@@ -107,7 +112,7 @@ export function TeddyBuddy({
               <path d="M86 152 C80 146 76 140 74 136" stroke="#f2be6b" strokeWidth="4" fill="none" strokeLinecap="round" />
               <path d="M70.0 110.0Q78.1 105.0 80.9 113.7Q90.5 114.8 86.7 123.2Q93.4 129.9 84.7 134.0Q85.2 143.1 75.8 141.0Q70.0 148.3 64.2 141.0Q54.8 143.1 55.3 134.0Q46.6 129.9 53.3 123.2Q49.5 114.8 59.1 113.7Q61.9 105.0 70.0 110.0Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
             </g>
-            <g data-p="bn" transform="translate(110 194) rotate(0)" opacity="1">
+            <g data-p="bn" transform="translate(110 194) rotate(0)" opacity={bnOpacity}>
               <path d="M-15 -14 C-15 4 -12 16 -12 25 C-12 32 -7 34 0 34 C9 34 13 31 13 25 C13 16 15 4 15 -14Z" fill="#f2be6b" />
               <path d="M-15 -14 C-15 4 -12 16 -12 25 C-12 32 -7 34 0 34 C9 34 13 31 13 25 C13 16 15 4 15 -14" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
               <path d="M-3.5 27 v5 M4.5 27 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
@@ -120,7 +125,7 @@ export function TeddyBuddy({
               <path d="M-3.5 27 v5 M4.5 27 v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             </g>
           </g>
-          <g data-p="haunch" opacity="0" transform="translate(0 0)">
+          <g data-p="haunch" opacity={haunchOpacity} transform="translate(0 0)">
             <path d="M80.0 204.0Q75.1 194.9 85.7 189.9Q88.4 180.2 100.7 181.2Q110.0 174.6 119.3 181.2Q131.6 180.2 134.3 189.9Q144.9 194.9 140.0 204.0Q144.9 213.1 134.3 218.1Q131.6 227.8 119.3 226.8Q110.0 233.4 100.7 226.8Q88.4 227.8 85.7 218.1Q75.1 213.1 80.0 204.0Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
             <path d="M112 214 C126 212 142 214 146 221 C148 226 144 229 136 229 L116 229 C108 229 104 224 106 219 Z" fill="#f2be6b" stroke="#2a170e" strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
             <path d="M132 222v5M139 222v5" stroke="#2a170e" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" fill="none" />
