@@ -567,6 +567,10 @@ export default function HomePage() {
                 Sarah M., Dubai, UAE
               </figcaption>
             </figure>
+
+            <div data-pup-stop="true" data-pose="sit" data-facing="right" className="pup-stop tp-dusk__teddy">
+              <TeddyBuddy pose="sit" facing="right" />
+            </div>
           </div>
 
           {/* Photowall with Taped Polaroids */}
@@ -611,9 +615,6 @@ export default function HomePage() {
             <svg viewBox="0 0 1440 160" preserveAspectRatio="none" className="tp-horizon__city">
               <path d="M0 160V118h34v-14h22v-22h30v34h18V96h26v30h22v-18h16v-30h34v40h20V70h28v56h24V98h18v-26h30v54h20v-38h26v-40l14-6 14 6v40h22v46h18V84h26v-30h22v50h24V76h36v50h20V96h18v-58h30v44h14V96h22v-30h16v22h26v-52l6-8v-24l4-6v-30l3-18 3 18v30l4 6v24l6 8v52h26v30h22V82h30v-20h24v48h20V90h28v-36h26v56h18V74h30v36h22V94h26v-24h30v62h20V102h26v20h34v38z" />
             </svg>
-            <div data-pup-stop="true" data-pose="sit" data-facing="right" className="pup-stop tp-dusk__teddy">
-              <TeddyBuddy pose="sit" facing="right" />
-            </div>
           </div>
         </section>
       </div>
@@ -674,7 +675,7 @@ export default function HomePage() {
                 Questions, answered
               </h2>
               <span aria-hidden="true" className="tp-night__wonder font-plush">?</span>
-              <div data-pup-stop="true" data-pose="sit" data-facing="right" data-act="tilt" className="pup-stop tp-night__teddy">
+              <div data-pup-stop="true" data-pose="sit" data-facing="right" data-act="tilt" className="pup-stop tp-night__pup tp-night__teddy">
                 <TeddyBuddy pose="sit" facing="right" act="tilt" />
               </div>
               <Link className="btn btn-ghost tp-night__cta mt-6 inline-block" href="/faq">
