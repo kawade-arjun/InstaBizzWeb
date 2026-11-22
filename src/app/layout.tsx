@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { RevealScope } from "@/components/RevealScope";
+import { PupCursorTrail } from "@/components/PupCursorTrail";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -71,7 +72,8 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${figtree.variable} ${shantellSans.variable}`}
     >
-      <body className="bg-milk text-cocoa antialiased min-h-screen flex flex-col font-sans selection:bg-honey selection:text-cocoa">
+      <body className="bg-milk text-cocoa antialiased min-h-screen flex flex-col font-sans selection:bg-honey selection:text-cocoa relative">
+        <PupCursorTrail />
         <SmoothScroll>
           <Header />
           <main id="main" tabIndex={-1} className="flex-1 pt-[var(--header-h)] outline-none">
