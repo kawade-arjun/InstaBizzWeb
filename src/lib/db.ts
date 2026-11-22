@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { MongoClient, ObjectId, type Db } from "mongodb";
 import type { DatabaseSync as SQLiteDatabaseSync } from "node:sqlite";
 import path from "node:path";
 import fs from "node:fs";
@@ -25,25 +25,33 @@ export interface Enquiry {
   created_at: string;
 }
 
-// Check for PostgreSQL connection string in environment variables
-const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+// Check for MongoDB connection string in environment variables (MongoDB Atlas, local, etc.)
+const mongoUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+const isMongo = Boolean(
+  mongoUri && (mongoUri.startsWith("mongodb://") || mongoUri.startsWith("mongodb+srv://"))
+);
 
-let pgPool: Pool | null = null;
+let clientPromise: Promise<MongoClient> | null = null;
 let sqliteDb: SQLiteDatabaseSync | null = null;
-let schemaInitialized = false;
 
-if (postgresUrl) {
-  // Use PostgreSQL (Neon, Supabase, Vercel Postgres, Railway, AWS RDS, Docker, etc.)
-  pgPool = new Pool({
-    connectionString: postgresUrl,
-    ssl: postgresUrl.includes("localhost") || postgresUrl.includes("127.0.0.1")
-      ? false
-      : { rejectUnauthorized: false },
-    max: 10,
-    idleTimeoutMillis: 30000,
-  });
+if (isMongo && mongoUri) {
+  // Use global clientPromise in development to prevent duplicate connections on HMR
+  const globalWithMongo = global as typeof globalThis & {
+    _mongoClientPromise?: Promise<MongoClient>;
+  };
+
+  if (process.env.NODE_ENV === "development") {
+    if (!globalWithMongo._mongoClientPromise) {
+      const client = new MongoClient(mongoUri);
+      globalWithMongo._mongoClientPromise = client.connect();
+    }
+    clientPromise = globalWithMongo._mongoClientPromise;
+  } else {
+    const client = new MongoClient(mongoUri);
+    clientPromise = client.connect();
+  }
 } else {
-  // Fallback to local SQLite for offline development if no DATABASE_URL is provided
+  // Graceful fallback to local SQLite for offline development if MONGODB_URI is not set
   const { DatabaseSync } = require("node:sqlite");
   const dbDir = path.join(process.cwd(), "data");
   if (!fs.existsSync(dbDir)) {
@@ -51,66 +59,48 @@ if (postgresUrl) {
   }
   const dbPath = path.join(dbDir, "teddypups.db");
   sqliteDb = new DatabaseSync(dbPath);
+
+  sqliteDb?.exec(`
+    CREATE TABLE IF NOT EXISTS enquiries (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      email TEXT,
+      area TEXT,
+      puppy_id TEXT,
+      puppy_name TEXT,
+      message TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 }
 
-async function ensureSchema() {
-  if (schemaInitialized) return;
-
-  if (pgPool) {
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS enquiries (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT,
-        area TEXT,
-        puppy_id TEXT,
-        puppy_name TEXT,
-        message TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  } else if (sqliteDb) {
-    sqliteDb.exec(`
-      CREATE TABLE IF NOT EXISTS enquiries (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT,
-        area TEXT,
-        puppy_id TEXT,
-        puppy_name TEXT,
-        message TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  }
-
-  schemaInitialized = true;
+async function getMongoDb(): Promise<Db | null> {
+  if (!clientPromise) return null;
+  const client = await clientPromise;
+  const dbName = process.env.MONGODB_DB || "teddypups";
+  return client.db(dbName);
 }
 
 export async function saveEnquiry(data: EnquiryInput): Promise<{ id: string } & EnquiryInput> {
-  await ensureSchema();
-  const id = crypto.randomUUID();
+  const db = await getMongoDb();
 
-  if (pgPool) {
-    await pgPool.query(
-      `
-      INSERT INTO enquiries (id, name, phone, email, area, puppy_id, puppy_name, message)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `,
-      [
-        id,
-        data.name.trim(),
-        data.phone.trim(),
-        data.email?.trim() || null,
-        data.area?.trim() || null,
-        data.puppyId || null,
-        data.puppyName || null,
-        data.message?.trim() || null,
-      ]
-    );
+  if (db) {
+    const doc = {
+      name: data.name.trim(),
+      phone: data.phone.trim(),
+      email: data.email?.trim() || null,
+      area: data.area?.trim() || null,
+      puppy_id: data.puppyId || null,
+      puppy_name: data.puppyName || null,
+      message: data.message?.trim() || null,
+      created_at: new Date(),
+    };
+
+    const res = await db.collection("enquiries").insertOne(doc);
+    return { id: res.insertedId.toString(), ...data };
   } else if (sqliteDb) {
+    const id = crypto.randomUUID();
     const stmt = sqliteDb.prepare(`
       INSERT INTO enquiries (id, name, phone, email, area, puppy_id, puppy_name, message)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -125,28 +115,32 @@ export async function saveEnquiry(data: EnquiryInput): Promise<{ id: string } & 
       data.puppyName || null,
       data.message?.trim() || null
     );
+    return { id, ...data };
   }
 
-  return { id, ...data };
+  return { id: crypto.randomUUID(), ...data };
 }
 
 export async function getAllEnquiries(): Promise<Enquiry[]> {
-  await ensureSchema();
+  const db = await getMongoDb();
 
-  if (pgPool) {
-    const res = await pgPool.query(
-      "SELECT * FROM enquiries ORDER BY created_at DESC"
-    );
-    return res.rows.map((r: any) => ({
-      id: String(r.id),
-      name: String(r.name),
-      phone: String(r.phone),
-      email: r.email ? String(r.email) : null,
-      area: r.area ? String(r.area) : null,
-      puppy_id: r.puppy_id ? String(r.puppy_id) : null,
-      puppy_name: r.puppy_name ? String(r.puppy_name) : null,
-      message: r.message ? String(r.message) : null,
-      created_at: new Date(r.created_at).toISOString(),
+  if (db) {
+    const docs = await db
+      .collection("enquiries")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+
+    return docs.map((doc) => ({
+      id: doc._id.toString(),
+      name: String(doc.name || ""),
+      phone: String(doc.phone || ""),
+      email: doc.email ? String(doc.email) : null,
+      area: doc.area ? String(doc.area) : null,
+      puppy_id: doc.puppy_id ? String(doc.puppy_id) : null,
+      puppy_name: doc.puppy_name ? String(doc.puppy_name) : null,
+      message: doc.message ? String(doc.message) : null,
+      created_at: doc.created_at ? new Date(doc.created_at).toISOString() : new Date().toISOString(),
     }));
   } else if (sqliteDb) {
     const stmt = sqliteDb.prepare("SELECT * FROM enquiries ORDER BY created_at DESC");
@@ -168,10 +162,16 @@ export async function getAllEnquiries(): Promise<Enquiry[]> {
 }
 
 export async function deleteEnquiry(id: string): Promise<void> {
-  await ensureSchema();
+  const db = await getMongoDb();
 
-  if (pgPool) {
-    await pgPool.query("DELETE FROM enquiries WHERE id = $1", [id]);
+  if (db) {
+    let query: any;
+    try {
+      query = { _id: new ObjectId(id) };
+    } catch {
+      query = { id };
+    }
+    await db.collection("enquiries").deleteOne(query);
   } else if (sqliteDb) {
     const stmt = sqliteDb.prepare("DELETE FROM enquiries WHERE id = ?");
     stmt.run(id);
