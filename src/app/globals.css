@@ -315,8 +315,13 @@ input:not([type="checkbox"], [type="radio"], [type="submit"], [type="range"]), t
   display: none;
 }
 
-/* Ensure all section dogs remain visible and responsive across the entire page */
-.pup-stop > .pup-buddy {
+/* When live companion is running, hide placeholder static dogs so only the single traveling companion is shown */
+html[data-pup="live"] .pup-stop > .pup-buddy {
+  display: none !important;
+}
+
+/* Fallback when JS is disabled: keep static section dogs visible */
+html:not([data-pup="live"]) .pup-stop > .pup-buddy {
   visibility: visible !important;
 }
 

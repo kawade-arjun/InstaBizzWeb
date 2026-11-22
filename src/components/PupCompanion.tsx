@@ -17,7 +17,7 @@ interface StopItem {
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (val: number, min = 0, max = 1) => Math.min(max, Math.max(min, val));
-// Quintic smootherstep polynomial (6t^5 - 15t^4 + 10t^3): 0 velocity and 0 acceleration at endpoints
+// Quintic smootherstep polynomial (6t^5 - 15t^4 + 10t^3): 0 velocity & 0 acceleration at endpoints
 const smootherstep = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
 
 export function PupCompanion() {
@@ -35,7 +35,14 @@ export function PupCompanion() {
   const printIdxRef = useRef(0);
   const lastStampPosRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Active state caches to prevent unnecessary React renders during 120fps RAF loop
+  // Smooth position lerp cache for 120fps fluid tracking with zero lag
+  const smoothPosRef = useRef<{ x: number; y: number; initialized: boolean }>({
+    x: 0,
+    y: 0,
+    initialized: false,
+  });
+
+  // Active state caches to prevent unnecessary React renders during RAF loop
   const activePoseRef = useRef<"sit" | "bow" | "snug" | "peek" | "walk" | "sleep">("peek");
   const activeFacingRef = useRef<"left" | "right">("right");
   const activeActRef = useRef<"tilt" | "basket" | "treadmill" | "peekaboo" | undefined>(undefined);
@@ -90,6 +97,7 @@ export function PupCompanion() {
     resizeObserver.observe(document.body);
 
     let rafId: number;
+    let isRunning = true;
 
     const render = () => {
       const stops = stopsRef.current;
@@ -103,8 +111,8 @@ export function PupCompanion() {
       const vw = document.documentElement.clientWidth;
       const focalY = scrollY + vh * 0.48;
 
-      let curX = stops[0].docLeft;
-      let curY = stops[0].docTop - scrollY;
+      let targetX = stops[0].docLeft;
+      let targetY = stops[0].docTop - scrollY;
       let scale = stops[0].scale;
       let pose = stops[0].pose;
       let facing = stops[0].facing;
@@ -119,26 +127,25 @@ export function PupCompanion() {
       const quiltTop = quiltEl ? quiltEl.getBoundingClientRect().top : firstStop.docTop - scrollY;
 
       if (focalY <= firstStop.docTop) {
-        // Initial Position: In the middle of the horizontal line of the page (50vw),
-        // sitting cleanly above the scalloped quilt curve lines
-        curX = vw / 2 - 150 * firstStop.scale;
-        curY = quiltTop - 150 * firstStop.scale;
+        // Initial Position: Exactly centered horizontally above quilt curve lines
+        targetX = vw / 2 - 150 * firstStop.scale;
+        targetY = quiltTop - 150 * firstStop.scale;
         scale = firstStop.scale;
         pose = "peek";
         facing = firstStop.facing;
         act = firstStop.act;
         behind = true;
-      } else if (focalY >= lastStop.docTop) {
-        // At the bottom of the page (in the basket circle): sleep peacefully!
-        curX = lastStop.docLeft;
-        curY = lastStop.docTop - scrollY;
+      } else if (focalY >= lastStop.docTop - 60) {
+        // At the bottom of the page in the basket circle: sleep peacefully!
+        targetX = lastStop.docLeft;
+        targetY = lastStop.docTop - scrollY;
         scale = lastStop.scale;
         pose = "sleep";
         facing = lastStop.facing;
         act = "basket";
         behind = true;
       } else {
-        // Find segment k where stops[k].docTop <= focalY < stops[k+1].docTop
+        // Seamless continuous spline traveling through all stops without stopping or lagging
         let k = 0;
         for (let i = 0; i < stops.length - 1; i++) {
           if (focalY >= stops[i].docTop) {
@@ -148,117 +155,98 @@ export function PupCompanion() {
 
         const s0 = stops[k];
         const s1 = stops[k + 1];
-        const span = Math.max(60, s1.docTop - s0.docTop);
-        const p = clamp((focalY - s0.docTop) / span);
+        const span = Math.max(1, s1.docTop - s0.docTop);
+        const p = clamp((focalY - s0.docTop) / span, 0, 1);
 
-        const holdStart = 0.10;
-        const holdEnd = 0.90;
+        // Quintic smootherstep easing across the full segment (no sudden stops or jerks)
+        const w = smootherstep(p);
 
-        if (p < holdStart) {
-          // Resting cleanly at stop s0
-          if (k === 0) {
-            curX = vw / 2 - 150 * s0.scale;
-            curY = quiltTop - 150 * s0.scale;
-          } else {
-            curX = s0.docLeft;
-            curY = s0.docTop - scrollY;
-          }
-          scale = s0.scale;
-          pose = s0.pose;
-          facing = s0.facing;
-          act = s0.act;
-          behind = s0.behind;
-        } else if (p > holdEnd) {
-          // Arrived and resting at stop s1
-          curX = s1.docLeft;
-          curY = s1.docTop - scrollY;
-          scale = s1.scale;
-          // When arrived at the last stop (Basket), sleep!
-          pose = k + 1 === stops.length - 1 ? "sleep" : s1.pose;
-          facing = s1.facing;
-          act = s1.act;
-          behind = s1.behind;
+        const startX = k === 0 ? vw / 2 - 150 * s0.scale : s0.docLeft;
+        const startY = k === 0 ? quiltTop - 150 * s0.scale : s0.docTop - scrollY;
+        const endX = s1.docLeft;
+        const endY = s1.docTop - scrollY;
+
+        // Continuous natural glide with subtle organic lateral curve and hop
+        const lateralBend = Math.sin(w * Math.PI) * (endX >= startX ? 12 : -12);
+        const hop = Math.sin(w * Math.PI) * 18;
+
+        targetX = lerp(startX, endX, w) + lateralBend;
+        targetY = lerp(startY, endY, w) - hop;
+        scale = lerp(s0.scale, s1.scale, w);
+
+        // Active walking motion during transition; smoothly tuck in when arriving at basket
+        if (k + 1 === stops.length - 1 && w > 0.85) {
+          pose = "sleep";
+          act = "basket";
+          behind = true;
         } else {
-          // ACTIVELY WALKING / TRAVELING BETWEEN STOPS WITH ULTRA-SMOOTH EASING
-          const u = clamp((p - holdStart) / (holdEnd - holdStart));
-          const w = smootherstep(u);
-
-          // If approaching the footer basket, smoothly transition into sleep near touchdown
-          pose = k + 1 === stops.length - 1 && u > 0.82 ? "sleep" : "walk";
+          pose = "walk";
           act = undefined;
-          behind = false; // Always in front while traveling
-          facing = s1.docLeft >= s0.docLeft ? "right" : "left";
-
-          scale = lerp(s0.scale, s1.scale, w);
-
-          let startX = s0.docLeft;
-          let startY = s0.docTop - scrollY;
-          if (k === 0) {
-            startX = vw / 2 - 150 * s0.scale;
-            startY = quiltTop - 150 * s0.scale;
-          }
-
-          const endX = s1.docLeft;
-          const endY = s1.docTop - scrollY;
-
-          // Natural organic S-curve lateral glide
-          const lateralBend = Math.sin(u * Math.PI) * (endX >= startX ? 14 : -14);
-          curX = lerp(startX, endX, w) + lateralBend;
-          curY = lerp(startY, endY, w);
-
-          // Playful hop arc
-          const hop = Math.sin(u * Math.PI) * 30;
-          curY -= hop;
-
-          // Stamp 24 golden background paw prints along the dog's path
-          if (printsRef.current) {
-            const paws = printsRef.current.children;
-            if (paws.length > 0) {
-              const prev = lastStampPosRef.current;
-              if (!prev || Math.hypot(curX - prev.x, curY - prev.y) > 28) {
-                const paw = paws[printIdxRef.current % paws.length] as HTMLElement;
-                printIdxRef.current++;
-
-                const stepDx = prev ? curX - prev.x : 1;
-                const stepDy = prev ? curY - prev.y : 0;
-                const angle = Math.atan2(stepDy, stepDx) + Math.PI / 2;
-                const pawSize = 15 * Math.max(0.75, 1.25 * (scale || 0.8));
-
-                const docPawX = curX + (facing === "right" ? 175 : 125) * scale;
-                const docPawY = curY + scrollY + 220 * scale;
-
-                paw.style.transform = `translate(${(docPawX - pawSize / 2).toFixed(1)}px, ${(docPawY - pawSize / 2).toFixed(1)}px) rotate(${angle.toFixed(3)}rad)`;
-                paw.style.width = `${pawSize.toFixed(1)}px`;
-                paw.style.height = `${pawSize.toFixed(1)}px`;
-
-                paw.animate(
-                  [
-                    { opacity: 0 },
-                    { opacity: 0.52, offset: 0.08 },
-                    { opacity: 0.52, offset: 0.55 },
-                    { opacity: 0 },
-                  ],
-                  { duration: 2600, easing: "ease-out" }
-                );
-
-                lastStampPosRef.current = { x: curX, y: curY };
-              }
-            }
-          }
+          behind = false;
+          facing = endX >= startX ? "right" : "left";
         }
       }
 
-      // Safe viewport boundary clamping so Teddy never scrolls off the monitor
-      const safeTop = 76;
-      const safeBottom = vh - 150;
-      curY = Math.min(safeBottom, Math.max(safeTop, curY));
+      // Safe viewport boundary clamping
+      const safeTop = 68;
+      const safeBottom = vh - 130;
+      targetY = Math.min(safeBottom, Math.max(safeTop, targetY));
 
-      // 0ms delay hardware-composited GPU transform
+      // Ultra-fluid position interpolation (0.24 factor gives instantaneous responsiveness + buttery smoothing)
+      if (!smoothPosRef.current.initialized) {
+        smoothPosRef.current.x = targetX;
+        smoothPosRef.current.y = targetY;
+        smoothPosRef.current.initialized = true;
+      } else {
+        smoothPosRef.current.x = lerp(smoothPosRef.current.x, targetX, 0.24);
+        smoothPosRef.current.y = lerp(smoothPosRef.current.y, targetY, 0.24);
+      }
+
+      const curX = smoothPosRef.current.x;
+      const curY = smoothPosRef.current.y;
+
+      // Hardware-accelerated GPU transform with 0ms CSS latency
       if (actorRef.current) {
         actorRef.current.style.transform = `translate3d(${curX.toFixed(2)}px, ${curY.toFixed(2)}px, 0)`;
       }
       if (bodyRef.current) {
         bodyRef.current.style.transform = `scale(${scale.toFixed(4)})`;
+      }
+
+      // Stamp 24 golden background paw prints along the dog's path while walking
+      if (pose === "walk" && printsRef.current) {
+        const paws = printsRef.current.children;
+        if (paws.length > 0) {
+          const prev = lastStampPosRef.current;
+          if (!prev || Math.hypot(curX - prev.x, curY - prev.y) > 26) {
+            const paw = paws[printIdxRef.current % paws.length] as HTMLElement;
+            printIdxRef.current++;
+
+            const stepDx = prev ? curX - prev.x : 1;
+            const stepDy = prev ? curY - prev.y : 0;
+            const angle = Math.atan2(stepDy, stepDx) + Math.PI / 2;
+            const pawSize = 14 * Math.max(0.75, 1.25 * (scale || 0.8));
+
+            const docPawX = curX + (facing === "right" ? 175 : 125) * scale;
+            const docPawY = curY + scrollY + 220 * scale;
+
+            paw.style.transform = `translate3d(${(docPawX - pawSize / 2).toFixed(1)}px, ${(docPawY - pawSize / 2).toFixed(1)}px, 0) rotate(${angle.toFixed(3)}rad)`;
+            paw.style.width = `${pawSize.toFixed(1)}px`;
+            paw.style.height = `${pawSize.toFixed(1)}px`;
+
+            paw.animate(
+              [
+                { opacity: 0 },
+                { opacity: 0.48, offset: 0.1 },
+                { opacity: 0.48, offset: 0.55 },
+                { opacity: 0 },
+              ],
+              { duration: 2400, easing: "ease-out" }
+            );
+
+            lastStampPosRef.current = { x: curX, y: curY };
+          }
+        }
       }
 
       // Sync React state only when changed to avoid layout re-render jitter
@@ -281,26 +269,25 @@ export function PupCompanion() {
       }
     };
 
-    const handleScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(render);
+    // Continuous 60/120fps RAF loop that stays perfectly in sync with smooth scroll & Lenis
+    const animLoop = () => {
+      if (!isRunning) return;
+      render();
+      rafId = requestAnimationFrame(animLoop);
     };
+    rafId = requestAnimationFrame(animLoop);
 
     const handleResize = () => {
       updateStops();
-      handleScroll();
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize, { passive: true });
 
-    render();
-
     return () => {
+      isRunning = false;
       delete document.documentElement.dataset.pup;
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
-      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
   }, []);
@@ -329,7 +316,7 @@ export function PupCompanion() {
           className="pup-actor"
           style={{
             willChange: "transform",
-            transition: "none", // Zero CSS delay for instantaneous 0-lag 120fps tracking
+            transition: "none", // Zero CSS latency for instantaneous 0-lag 120fps tracking
           }}
         >
           <div ref={bodyRef} className="pup-actor__body">
