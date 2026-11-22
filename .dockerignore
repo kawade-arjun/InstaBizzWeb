@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+data/*.db
+data/*.db-journal
+test-results
+playwright-report
+.env*.local
+README.md

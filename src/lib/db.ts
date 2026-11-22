@@ -56,7 +56,23 @@ export function saveEnquiry(data: EnquiryInput) {
 
 export function getAllEnquiries() {
   const stmt = db.prepare("SELECT * FROM enquiries ORDER BY created_at DESC");
-  return stmt.all();
+  const rows = stmt.all() as any[];
+  return rows.map((r) => ({
+    id: String(r.id),
+    name: String(r.name),
+    phone: String(r.phone),
+    email: r.email ? String(r.email) : null,
+    area: r.area ? String(r.area) : null,
+    puppy_id: r.puppy_id ? String(r.puppy_id) : null,
+    puppy_name: r.puppy_name ? String(r.puppy_name) : null,
+    message: r.message ? String(r.message) : null,
+    created_at: String(r.created_at),
+  }));
+}
+
+export function deleteEnquiry(id: string) {
+  const stmt = db.prepare("DELETE FROM enquiries WHERE id = ?");
+  stmt.run(id);
 }
 
 export default db;

@@ -69,3 +69,8 @@ export async function sendEnquiry(
     };
   }
 }
+
+export async function deleteEnquiryAction(id: string) {
+  const { deleteEnquiry } = await import("@/lib/db");
+  deleteEnquiry(id);
+}
